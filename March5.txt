@@ -1,0 +1,217 @@
+P1
+config t
+int e0/0
+ip address 10.2.1.101 255.255.255.0
+
+P2
+config t
+int e1/0
+ip address 10.2.1.201 255.255.255.0
+
+STEP2:Configure static routing on
+P1
+config t
+ip route 10.2.2.0 255.255.255.0 10.2.1.1
+do ping 10.2.2.1
+do ping 10.2.2.2
+ip route 192.168.1.128 255.255.255.224 10.2.1.1
+
+STEP3: configure default routing on EDGE devices
+	   EDGE only one gateway/connection outside
+P2: default routing on 
+config t
+ip route 0.0.0.0 0.0.0.0 10.2.1.2
+do sh ip route static
+do ping 10.2.2.2
+do ping 192.168.1.130
+
+Step4: EIGRP:
+
+d1:d2:
+config t
+router eigrp 100
+network 10.0.0.0
+network 192.168.1.0
+no auto-summary
+
+r4:
+config t
+router eigrp 100
+network 10.0.0.0
+no auto-summary
+
+How to check if eigrp is working: 4 Ways
+show ip protocol
+show ip eigrp neigbor
+show ip eigrp topology
+show ip route eigrp
+
+Step5: Open shortest path first: for all brands
+R4:
+config t
+int lo 0
+ip address 4.4.4.4 255.255.255.255
+router ospf 1
+router-id 4.4.4.4
+network 10.1.1.8 0.0.0.3 area 34
+
+R3:
+config t
+int lo 0
+ip address 3.3.3.3 255.255.255.255
+router ospf 1
+router-id 3.3.3.3
+network 10.1.1.8 0.0.0.3 area 34
+network 10.1.1.4 0.0.0.3 area 0
+
+R2:
+config t
+int lo 0
+ip address 2.2.2.2 255.255.255.255
+router ospf 1
+router-id 2.2.2.2
+network 10.1.1.0 0.0.0.3 area 12
+network 10.1.1.4 0.0.0.3 area 0
+
+R1:
+config t
+int lo 0
+ip address 1.1.1.1 255.255.255.255
+router ospf 1
+router-id 1.1.1.1
+network 10.1.1.0 0.0.0.3 area 12
+
+Additional routes in OSPF:
+R4
+config t
+router ospf 1
+network 4.4.4.4  0.0.0.0 Area 34
+do sh ip route ospf
+
+R3
+config t
+router ospf 1
+network 3.3.3.3  0.0.0.0 Area 0
+do sh ip route ospf
+
+R2
+config t
+router ospf 1
+network 2.2.2.2  0.0.0.0 Area 0
+do sh ip route ospf
+
+R1
+config t
+router ospf 1
+network 1.1.1.1  0.0.0.0 Area 12
+do sh ip route ospf
+
+Step6: Master OSPF Packet Types
+DITE ELF
+
+Step7:Router redistribution
+R4 ipasok OSPF sa loob ng EIGRP
+config t
+router eigrp 100
+redistribute ospf 1 metric 10000 100 255 1 1500
+exit
+!ipasok EIGRP sa OSPF, no requirement (peso)
+Router ospf 1
+redistribute eigrp 100 subnets
+end
+
+Step8: Compute and Collect
+3 x
+2 x
+Step9: BGP fundamentals
+what is autonomous system Numbers of AS Number:
+group of Internet routers under the same administration. Group of routers running BGP
+Private AS 64512 -> 65534
+Public AS 1 -> 64511
+***********************************************************
+R1 BGP:
+config t
+router bgp 1
+ bgp log-neighbor-changes
+ neighbor 208.8.8.4 remote-as 45
+ neighbor 207.7.7.2 remote-as 2
+ neighbor 209.9.9.3 remote-as 3
+ network 10.0.0.0 Mask 255.255.255.252
+ network 207.7.7.0
+ network 208.8.8.0
+ network 209.9.9.0
+end
+@@@ISP1:
+CONFIG T
+router bgp 45
+bgp log-neighbor-changes
+neighbor 24.2.4.2 remote-as 2
+neighbor 45.4.5.5 remote-as 45
+neighbor 208.8.8.1 remote-as 1
+network 208.8.8.0
+network 24.2.4.0 mask 255.255.255.0
+network 44.44.44.44 mask 255.255.255.255
+network 45.4.5.0 mask 255.255.255.0
+!PretentInternet
+network 0.0.0.0
+ip route 0.0.0.0 0.0.0.0 null 0
+ip route 10.0.0.0 255.0.0.0 208.8.8.1
+end
+
+@@@ISP2:
+config t
+router bgp 2
+bgp log-neighbor-changes
+neighbor 24.2.4.4 remote-as 45
+neighbor 25.2.5.5 remote-as 45
+neighbor 32.3.2.3 remote-as 3
+neighbor 207.7.7.1 remote-as 1
+network 207.0.0.0
+network 22.22.22.22 mask 255.255.255.255
+network 24.2.4.0 mask 255.255.255.0
+network 25.2.5.0 mask 255.255.255.0
+network 32.3.2.0 mask 255.255.255.0
+!fakeInternet
+network 0.0.0.0
+ip route 0.0.0.0 0.0.0.0 null 0
+ip route 10.0.0.0 255.0.0.0 207.7.7.1
+end
+@@ISP3:
+CONFIG T
+router bgp 3
+bgp log-neighbor-changes
+neighbor 32.3.2.2 remote-as 2
+neighbor 35.3.5.5 remote-as 45
+neighbor 209.9.9.1 remote-as 1
+network 209.9.9.0
+network 32.3.2.0 mask 255.255.255.0
+network 33.33.33.33 mask 255.255.255.255
+network 35.3.5.0 mask 255.255.255.0
+network 0.0.0.0
+ip route 0.0.0.0 0.0.0.0 null 0
+ip route 10.0.0.0 255.0.0.0 209.9.9.1
+end
+
+Isp4:
+config t
+int lo 8
+ ip add 8.8.8.8 255.255.255.255
+router bgp 45
+ bgp log-neighbor-changes
+ neighbor 25.2.5.2 remote-as 2
+ neighbor 35.3.5.3 remote-as 3
+ neighbor 45.4.5.4 remote-as 45
+ network 8.8.8.8 mask 255.255.255.255
+ network 55.55.55.55 mask 255.255.255.255
+ network 25.2.5.0 mask 255.255.255.0
+ network 35.3.5.0 mask 255.255.255.0
+ network 45.4.5.0 mask 255.255.255.0
+end
+
+Step10: OSPF default information originate:
+
+R1:
+config t
+router ospf 1
+default-information originate
+end
